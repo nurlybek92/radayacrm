@@ -216,7 +216,7 @@ export function ProductionClient({ orders, session }) {
             </div>
           ))}
         </div>
-      ) : (
+      ) : viewMode === 'calendar' ? (
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', gap: '1rem' }}>
           
           {/* Unscheduled Orders */}
