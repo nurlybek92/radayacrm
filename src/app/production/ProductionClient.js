@@ -8,9 +8,12 @@ export function ProductionClient({ orders, session }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState('kanban'); // 'kanban' | 'calendar'
+  const [localOrders, setLocalOrders] = useState(orders);
 
   const updateStatus = async (order_id, new_status) => {
     setLoading(true);
+    // Optimistic update
+    setLocalOrders(prev => prev.map(o => o.id === order_id ? { ...o, current_status: new_status } : o));
     await fetch('/api/production/status', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -22,6 +25,8 @@ export function ProductionClient({ orders, session }) {
 
   const updatePlanDate = async (order_id, date_str) => {
     setLoading(true);
+    // Optimistic update
+    setLocalOrders(prev => prev.map(o => o.id === order_id ? { ...o, planned_date: date_str ? `${date_str}T00:00:00Z` : null } : o));
     await fetch('/api/production/plan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -52,10 +57,10 @@ export function ProductionClient({ orders, session }) {
 
   const getOrdersForDate = (date) => {
     const dateStr = date.toISOString().split('T')[0];
-    return orders.filter(o => o.planned_date && o.planned_date.startsWith(dateStr) && o.current_status !== 'SHIPPED');
+    return localOrders.filter(o => o.planned_date && o.planned_date.startsWith(dateStr) && o.current_status !== 'SHIPPED');
   };
 
-  const unscheduledOrders = orders.filter(o => !o.planned_date && o.current_status !== 'SHIPPED');
+  const unscheduledOrders = localOrders.filter(o => !o.planned_date && o.current_status !== 'SHIPPED');
 
   const renderOrderCard = (order, colNext, colNextLabel) => (
     <div key={order.id} className="card" style={{ padding: '1rem', background: '#FFF', borderLeft: order.planned_date ? '4px solid var(--primary)' : '4px solid #ccc' }}>
@@ -127,8 +132,8 @@ export function ProductionClient({ orders, session }) {
               </div>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {orders.filter(o => o.current_status === col.id).map(order => renderOrderCard(order, col.next, col.nextLabel))}
-                {orders.filter(o => o.current_status === col.id).length === 0 && (
+                {localOrders.filter(o => o.current_status === col.id).map(order => renderOrderCard(order, col.next, col.nextLabel))}
+                {localOrders.filter(o => o.current_status === col.id).length === 0 && (
                   <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', padding: '2rem 0' }}>Нет заказов</div>
                 )}
               </div>
@@ -145,14 +150,32 @@ export function ProductionClient({ orders, session }) {
                 <div style={{ color: 'var(--text-muted)' }}>Все активные заказы распределены по датам.</div>
               ) : (
                 unscheduledOrders.map(order => (
-                  <div key={order.id} style={{ minWidth: '250px' }}>
-                    {renderOrderCard(order, null, null)}
-                    <div style={{ marginTop: '0.5rem' }}>
-                      <label style={{ fontSize: '0.75rem', fontWeight: 600 }}>Назначить дату:</label>
+                  <div key={order.id} style={{ 
+                    minWidth: '250px', 
+                    display: 'flex', 
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    background: '#FFF',
+                    padding: '1rem',
+                    borderRadius: '0.5rem',
+                    border: '1px solid var(--border-color)',
+                    borderLeft: '4px solid #ccc'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>#{order.id} — {new Date(order.order_date).toLocaleDateString('ru-RU')}</div>
+                      <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>{order.client_name}</div>
+                      <div style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>
+                        <span className="badge badge-gray">{order.product_type}</span> {order.product_name}<br/>
+                        Кол-во: <strong>{order.quantity.toLocaleString('ru-RU')}</strong> | Вес: <strong>{order.total_weight} кг</strong>
+                      </div>
+                    </div>
+                    
+                    <div style={{ marginTop: 'auto', paddingTop: '0.5rem', borderTop: '1px solid #eee' }}>
+                      <label style={{ fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>Назначить дату:</label>
                       <input 
                         type="date" 
                         className="form-input"
-                        style={{ padding: '0.25rem' }}
+                        style={{ padding: '0.4rem', width: '100%', fontSize: '0.8rem' }}
                         onChange={(e) => updatePlanDate(order.id, e.target.value)}
                       />
                     </div>
