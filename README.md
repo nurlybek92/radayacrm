@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# miniCRM - Система Управления (RaDeya)
 
-## Getting Started
+Современная система автоматизации работы со сделками, сырьем и производством.
 
-First, run the development server:
+## 🚀 Технологический стек
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+* **Frontend & Backend**: [Next.js (App Router)](https://nextjs.org/) + React
+* **База Данных**: SQLite (`better-sqlite3`) — единый файл `mini_crm.db`
+* **Стилизация**: Vanilla CSS (`globals.css`) с кастомной дизайн-системой (сине-белая цветовая гамма, эффекты glassmorphism, тени)
+* **Иконки**: [Lucide-React](https://lucide.dev/)
+* **Графики**: Chart.js (`react-chartjs-2`)
+* **Авторизация**: JWT-сессии через HTTP-only куки (`jose`)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🏗️ Архитектура системы
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+Система построена по принципу монолита (Full-Stack Next.js), где Server Components общаются с SQLite напрямую, а Client Components отвечают за интерактивность (Drag-and-Drop, модальные окна, фильтры).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Ролевая модель (RBAC)
+Система поддерживает жесткое разграничение прав доступа:
+1. `director` (Директор) — полный доступ ко всем разделам (Дашборд, Продажи, Производство).
+2. `manager` (Менеджер по продажам) — видит только свои заказы, создает сделки, принимает оплаты.
+3. `production` (Начальник производства) — доступ только к разделу "Производство", меняет статусы отливки, планирует даты. Не видит финансовую информацию.
+4. `accounting` (Бухгалтер) — доступ к Дашборду и Продажам, принимает оплаты, но не может создавать новые заказы.
 
-## Learn More
+### Основные модули
 
-To learn more about Next.js, take a look at the following resources:
+1. **Дашборд (Dashboard)**
+   * Сводная статистика (Выручка, долги, количество заказов).
+   * Графики эффективности менеджеров (кто сколько принес выручки).
+   * Графики долей продуктов (какой товар продается лучше).
+   * Фильтрация всей статистики по годам.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. **Продажи (CRM & Kanban)**
+   * Канбан-доска сделок (по менеджерам).
+   * Карточка заказа с историей, товарами и финансовым учетом.
+   * Система частичных оплат (Предоплата 50%, произвольная сумма, полная оплата).
+   * Автоматический расчет долга.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+3. **Производство (Production Planning)**
+   Модуль имеет 3 вида отображения:
+   * **Канбан**: Движение заказа по статусам (`Получен` -> `В отливку` -> `Готов` -> `Отгружен`).
+   * **Планинг (Таймлайн)**: Вертикальная шкала на 30 дней вперед с горизонтальным скроллом карточек. Поддержка Drag-and-Drop из корзины "Нераспределенных" заказов прямо на нужную дату.
+   * **Обзор (Compact Grid)**: Месячная сетка на 5 недель. Карточки компактно свернуты до иконок и названий клиентов. При клике открывается детальное модальное окно.
 
-## Deploy on Vercel
+## 💾 База Данных (Схема SQLite)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+В корне лежит файл `mini_crm.db`. Основные таблицы:
+* `users` — пользователи и их роли.
+* `clients` — клиентская база (БИН, ИИН, контакты).
+* `products_catalog` — справочник выпускаемой продукции.
+* `orders` — главная таблица заказов (плановые даты, суммы).
+* `order_items` — позиции внутри заказа.
+* `order_status_history` — лог изменения статусов (для отслеживания того, когда заказ перешел в производство).
+* `payments` — история транзакций и частичных оплат.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## ⚙️ Запуск проекта
+
+1. Установите зависимости:
+   ```bash
+   npm install
+   ```
+2. Запустите сервер для разработки:
+   ```bash
+   npm run dev
+   ```
+3. Откройте [http://localhost:3000](http://localhost:3000)
+
+*(Для продакшена: `npm run build` и `npm start`)*
