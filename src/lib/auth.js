@@ -63,5 +63,11 @@ export async function setSession(data) {
 // Destroy the session cookie
 export async function destroySession() {
   const cookieStore = await cookies();
-  cookieStore.delete('crm_session');
+  cookieStore.set('crm_session', '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 0,
+  });
 }
