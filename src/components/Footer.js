@@ -3,7 +3,7 @@ import React from 'react';
 export default function Footer() {
   return (
     <footer style={{
-      backgroundColor: '#0a1118', /* dark background like the screenshot */
+      backgroundColor: '#003D7A', /* dark blue */
       color: '#ffffff',
       padding: '2rem 1rem',
       display: 'flex',
@@ -21,7 +21,7 @@ export default function Footer() {
         />
       </div>
       <div style={{ 
-        color: '#d97706', /* slightly orange/muted */
+        color: '#E6E7E8', /* light gray */
         fontSize: '0.9rem', 
         fontWeight: '500' 
       }}>
