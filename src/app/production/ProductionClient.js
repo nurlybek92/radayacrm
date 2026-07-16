@@ -337,20 +337,37 @@ export function ProductionClient({ orders, session }) {
                       <div 
                         key={order.id} 
                         style={{ 
-                          background: 'var(--bg-secondary)', 
-                          padding: '0.25rem 0.5rem', 
-                          borderRadius: '4px', 
-                          fontSize: '0.7rem',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          borderLeft: '2px solid var(--primary)',
-                          cursor: 'pointer'
+                          background: '#FFFFFF', 
+                          padding: '0.35rem 0.5rem', 
+                          borderRadius: '6px', 
+                          fontSize: '0.75rem',
+                          fontWeight: '600',
+                          border: '1px solid var(--border-color)',
+                          borderLeft: '3px solid var(--primary)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                          color: 'var(--text-primary)'
                         }}
                         title={`Кликните для просмотра деталей`}
                         onClick={() => setSelectedOrder(order)}
                       >
-                        {order.client_name}
+                        <Package style={{ width: '12px', height: '12px', color: '#9CA3AF', flexShrink: 0 }} />
+                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
+                          {order.client_name}
+                        </span>
+                        <span style={{ 
+                          fontSize: '0.6rem', 
+                          padding: '0.1rem 0.3rem', 
+                          background: '#F3F4F6', 
+                          color: '#6B7280', 
+                          borderRadius: '4px',
+                          flexShrink: 0 
+                        }}>
+                          {order.product_type}
+                        </span>
                       </div>
                     ))}
                   </div>
