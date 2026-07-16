@@ -9,6 +9,7 @@ export function ProductionClient({ orders, session }) {
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState('kanban'); // 'kanban' | 'calendar' | 'overview'
   const [localOrders, setLocalOrders] = useState(orders);
+  const [selectedOrder, setSelectedOrder] = useState(null);
 
   const updateStatus = async (order_id, new_status) => {
     setLoading(true);
@@ -126,6 +127,7 @@ export function ProductionClient({ orders, session }) {
               title="Запланированная дата"
               style={{ fontSize: '0.7rem', padding: '0.1rem', border: '1px solid #ddd', borderRadius: '4px' }}
               value={order.planned_date ? order.planned_date.split('T')[0] : ''}
+              min={getLocalDateString(today)}
               onChange={(e) => updatePlanDate(order.id, e.target.value)}
             />
           )}
@@ -158,6 +160,7 @@ export function ProductionClient({ orders, session }) {
               className="form-input"
               style={{ padding: '0.4rem', width: '100%', fontSize: '0.8rem' }}
               value={order.planned_date ? order.planned_date.split('T')[0] : ''}
+              min={getLocalDateString(today)}
               onChange={(e) => updatePlanDate(order.id, e.target.value)}
             />
          </div>
@@ -344,7 +347,8 @@ export function ProductionClient({ orders, session }) {
                           borderLeft: '2px solid var(--primary)',
                           cursor: 'pointer'
                         }}
-                        title={`Заказ #${order.id}\nКлиент: ${order.client_name}\nПродукт: ${order.product_name}\nКол-во: ${order.quantity}`}
+                        title={`Кликните для просмотра деталей`}
+                        onClick={() => setSelectedOrder(order)}
                       >
                         {order.client_name}
                       </div>
@@ -353,6 +357,59 @@ export function ProductionClient({ orders, session }) {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {selectedOrder && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div className="card" style={{ width: '100%', maxWidth: '400px', background: '#FFF' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
+              <h3 style={{ margin: 0, color: 'var(--primary)' }}>Заказ #{selectedOrder.id}</h3>
+              <button 
+                onClick={() => setSelectedOrder(null)}
+                style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--text-secondary)' }}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div style={{ marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Клиент</div>
+                <div style={{ fontWeight: 700 }}>{selectedOrder.client_name}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Продукт</div>
+                <div><span className="badge badge-gray">{selectedOrder.product_type}</span> {selectedOrder.product_name}</div>
+              </div>
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Количество</div>
+                  <div style={{ fontWeight: 600 }}>{selectedOrder.quantity.toLocaleString('ru-RU')} шт</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Общий вес</div>
+                  <div style={{ fontWeight: 600 }}>{selectedOrder.total_weight} кг</div>
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Статус</div>
+                <div>{columns.find(c => c.id === selectedOrder.current_status)?.title}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Дата заказа</div>
+                <div>{new Date(selectedOrder.order_date).toLocaleDateString('ru-RU')}</div>
+              </div>
+            </div>
+
+            <button 
+              className="btn btn-secondary" 
+              style={{ width: '100%' }}
+              onClick={() => setSelectedOrder(null)}
+            >
+              Закрыть
+            </button>
           </div>
         </div>
       )}
