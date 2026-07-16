@@ -157,7 +157,7 @@ export default function LoginPage() {
           fontSize: '0.8rem',
           color: 'var(--text-muted)'
         }}>
-          Логины: admin, manager1, manager2, prod<br />
+          Логины: admin, manager1, manager2, prod, acc<br />
           (пароль: 123456)
         </div>
       </div>
