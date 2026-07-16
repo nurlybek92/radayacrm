@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckCircle2, Factory, Package, Send, Calendar, LayoutGrid } from 'lucide-react';
+import { CheckCircle2, Factory, Package, Send, Calendar, LayoutGrid, GripVertical } from 'lucide-react';
 
 export function ProductionClient({ orders, session }) {
   const router = useRouter();
@@ -43,62 +43,119 @@ export function ProductionClient({ orders, session }) {
     { id: 'SHIPPED', title: 'Отгружен', icon: <Send className="w-5 h-5 text-green-500" />, next: null }
   ];
 
-  // Calendar logic
+  // Calendar logic (30 days)
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
-  // Generate next 7 days for the calendar view
   const calendarDays = [];
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 30; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
     calendarDays.push(d);
   }
 
+  // Format date to local YYYY-MM-DD to avoid UTC timezone jumps
+  const getLocalDateString = (d) => {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
   const getOrdersForDate = (date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = getLocalDateString(date);
     return localOrders.filter(o => o.planned_date && o.planned_date.startsWith(dateStr) && o.current_status !== 'SHIPPED');
   };
 
   const unscheduledOrders = localOrders.filter(o => !o.planned_date && o.current_status !== 'SHIPPED');
 
-  const renderOrderCard = (order, colNext, colNextLabel) => (
-    <div key={order.id} className="card" style={{ padding: '1rem', background: '#FFF', borderLeft: order.planned_date ? '4px solid var(--primary)' : '4px solid #ccc' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>#{order.id} — {new Date(order.order_date).toLocaleDateString('ru-RU')}</div>
-        {viewMode === 'kanban' && (
-          <input 
-            type="date" 
-            title="Запланированная дата"
-            style={{ fontSize: '0.7rem', padding: '0.1rem', border: '1px solid #ddd', borderRadius: '4px' }}
-            value={order.planned_date ? order.planned_date.split('T')[0] : ''}
-            onChange={(e) => updatePlanDate(order.id, e.target.value)}
-          />
-        )}
-      </div>
-      <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>{order.client_name}</div>
-      <div style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>
-        <span className="badge badge-gray">{order.product_type}</span> {order.product_name}<br/>
-        Кол-во: <strong>{order.quantity.toLocaleString('ru-RU')}</strong> | Вес: <strong>{order.total_weight} кг</strong>
+  // Drag and drop handlers
+  const handleDragStart = (e, order_id) => {
+    e.dataTransfer.setData('order_id', order_id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDropToDate = (e, dateStr) => {
+    e.preventDefault();
+    const order_id = parseInt(e.dataTransfer.getData('order_id'), 10);
+    if (!isNaN(order_id)) {
+      updatePlanDate(order_id, dateStr);
+    }
+  };
+
+  const renderOrderCard = (order, colNext, colNextLabel, draggable = false) => (
+    <div 
+      key={order.id} 
+      className="card" 
+      draggable={draggable}
+      onDragStart={draggable ? (e) => handleDragStart(e, order.id) : undefined}
+      style={{ 
+        padding: '1rem', 
+        background: '#FFF', 
+        borderLeft: order.planned_date ? '4px solid var(--primary)' : '4px solid #ccc',
+        minWidth: '250px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        cursor: draggable ? 'grab' : 'default',
+        boxShadow: draggable ? '0 2px 4px rgba(0,0,0,0.05)' : undefined
+      }}
+    >
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            {draggable && <GripVertical className="w-3 h-3" />} #{order.id} — {new Date(order.order_date).toLocaleDateString('ru-RU')}
+          </div>
+          {viewMode === 'kanban' && (
+            <input 
+              type="date" 
+              title="Запланированная дата"
+              style={{ fontSize: '0.7rem', padding: '0.1rem', border: '1px solid #ddd', borderRadius: '4px' }}
+              value={order.planned_date ? order.planned_date.split('T')[0] : ''}
+              onChange={(e) => updatePlanDate(order.id, e.target.value)}
+            />
+          )}
+        </div>
+        <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>{order.client_name}</div>
+        <div style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>
+          <span className="badge badge-gray">{order.product_type}</span> {order.product_name}<br/>
+          Кол-во: <strong>{order.quantity.toLocaleString('ru-RU')}</strong> | Вес: <strong>{order.total_weight} кг</strong>
+        </div>
       </div>
       
       {colNext && (
-        <button 
-          className="btn btn-success" 
-          style={{ width: '100%', fontSize: '0.8rem', padding: '0.5rem' }}
-          disabled={loading || (colNext === 'SHIPPED' && session.role === 'production')}
-          title={colNext === 'SHIPPED' && session.role === 'production' ? 'Отгружать может только менеджер продаж' : ''}
-          onClick={() => updateStatus(order.id, colNext)}
-        >
-          {colNextLabel} ➔
-        </button>
+        <div style={{ marginTop: 'auto', paddingTop: '0.5rem' }}>
+          <button 
+            className="btn btn-success" 
+            style={{ width: '100%', fontSize: '0.8rem', padding: '0.5rem' }}
+            disabled={loading || (colNext === 'SHIPPED' && session.role === 'production')}
+            title={colNext === 'SHIPPED' && session.role === 'production' ? 'Отгружать может только менеджер продаж' : ''}
+            onClick={() => updateStatus(order.id, colNext)}
+          >
+            {colNextLabel} ➔
+          </button>
+        </div>
+      )}
+      {!colNext && viewMode === 'calendar' && (
+         <div style={{ marginTop: 'auto', paddingTop: '0.5rem', borderTop: '1px solid #eee' }}>
+            <label style={{ fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>Изменить дату:</label>
+            <input 
+              type="date" 
+              className="form-input"
+              style={{ padding: '0.4rem', width: '100%', fontSize: '0.8rem' }}
+              value={order.planned_date ? order.planned_date.split('T')[0] : ''}
+              onChange={(e) => updatePlanDate(order.id, e.target.value)}
+            />
+         </div>
       )}
     </div>
   );
 
   return (
-    <div className="container" style={{ padding: '2rem 1.5rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
+    <div className="container" style={{ padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 80px)', maxWidth: '1600px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
         <div>
           <h1 style={{ color: 'var(--primary)', fontSize: '2rem' }}>Производство</h1>
           <p style={{ color: 'var(--text-secondary)' }}>Управление заказами и планирование выпуска</p>
@@ -141,79 +198,71 @@ export function ProductionClient({ orders, session }) {
           ))}
         </div>
       ) : (
-        <div>
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', gap: '1rem' }}>
+          
           {/* Unscheduled Orders */}
-          <div className="card" style={{ marginBottom: '2rem', borderLeft: '4px solid var(--danger)' }}>
-            <h3 style={{ marginBottom: '1rem', color: 'var(--danger)' }}>Нераспределенные заказы (Требуют планирования)</h3>
-            <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '1rem' }}>
+          <div 
+            className="card" 
+            style={{ borderLeft: '4px solid var(--danger)', padding: '1rem', flexShrink: 0 }}
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDropToDate(e, '')}
+          >
+            <h3 style={{ marginBottom: '1rem', color: 'var(--danger)', fontSize: '1.1rem' }}>
+              Нераспределенные заказы (Перетащите вниз на нужную дату)
+            </h3>
+            <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
               {unscheduledOrders.length === 0 ? (
                 <div style={{ color: 'var(--text-muted)' }}>Все активные заказы распределены по датам.</div>
               ) : (
-                unscheduledOrders.map(order => (
-                  <div key={order.id} style={{ 
-                    minWidth: '250px', 
-                    display: 'flex', 
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    background: '#FFF',
-                    padding: '1rem',
-                    borderRadius: '0.5rem',
-                    border: '1px solid var(--border-color)',
-                    borderLeft: '4px solid #ccc'
-                  }}>
-                    <div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>#{order.id} — {new Date(order.order_date).toLocaleDateString('ru-RU')}</div>
-                      <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>{order.client_name}</div>
-                      <div style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>
-                        <span className="badge badge-gray">{order.product_type}</span> {order.product_name}<br/>
-                        Кол-во: <strong>{order.quantity.toLocaleString('ru-RU')}</strong> | Вес: <strong>{order.total_weight} кг</strong>
-                      </div>
-                    </div>
-                    
-                    <div style={{ marginTop: 'auto', paddingTop: '0.5rem', borderTop: '1px solid #eee' }}>
-                      <label style={{ fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>Назначить дату:</label>
-                      <input 
-                        type="date" 
-                        className="form-input"
-                        style={{ padding: '0.4rem', width: '100%', fontSize: '0.8rem' }}
-                        onChange={(e) => updatePlanDate(order.id, e.target.value)}
-                      />
-                    </div>
-                  </div>
-                ))
+                unscheduledOrders.map(order => renderOrderCard(order, null, null, true))
               )}
             </div>
           </div>
 
-          {/* 7-Day Calendar */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '1rem', alignItems: 'start' }}>
+          {/* Vertical Calendar */}
+          <div style={{ flex: 1, overflowY: 'auto', paddingRight: '1rem', paddingBottom: '2rem' }}>
             {calendarDays.map((date, idx) => {
               const dayOrders = getOrdersForDate(date);
               const isToday = idx === 0;
-              const dateStr = date.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
+              const dateStrShort = date.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+              const dateDbStr = getLocalDateString(date);
               
               return (
-                <div key={date.toISOString()} className="card" style={{ background: isToday ? 'var(--primary-glow)' : '#F8F9FA', padding: '1rem', border: isToday ? '1px solid var(--primary)' : 'none' }}>
-                  <div style={{ textAlign: 'center', marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '2px solid var(--border-color)' }}>
-                    <h4 style={{ margin: 0, color: isToday ? 'var(--primary)' : 'var(--text-primary)', fontWeight: 800 }}>{dateStr}</h4>
-                    {isToday && <span className="badge badge-blue" style={{ fontSize: '0.6rem', marginTop: '0.25rem' }}>Сегодня</span>}
+                <div 
+                  key={date.toISOString()} 
+                  className="card"
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDropToDate(e, dateDbStr)}
+                  style={{ 
+                    background: isToday ? 'var(--primary-glow)' : '#F8F9FA', 
+                    padding: '1rem', 
+                    marginBottom: '1rem',
+                    border: isToday ? '1px solid var(--primary)' : '1px dashed var(--border-color)',
+                    display: 'flex',
+                    alignItems: 'stretch'
+                  }}
+                >
+                  <div style={{ 
+                    width: '150px', 
+                    borderRight: '2px solid var(--border-color)', 
+                    paddingRight: '1rem', 
+                    marginRight: '1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center'
+                  }}>
+                    <h4 style={{ margin: 0, color: isToday ? 'var(--primary)' : 'var(--text-primary)', fontWeight: 700, fontSize: '1rem', textTransform: 'capitalize' }}>
+                      {dateStrShort}
+                    </h4>
+                    {isToday && <span className="badge badge-blue" style={{ fontSize: '0.7rem', marginTop: '0.5rem', alignSelf: 'flex-start' }}>Сегодня</span>}
                   </div>
                   
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {dayOrders.map(order => {
-                      const colNext = columns.find(c => c.id === order.current_status)?.next;
-                      const colNextLabel = columns.find(c => c.id === order.current_status)?.nextLabel;
-                      return (
-                        <div key={order.id}>
-                          <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.2rem', textTransform: 'uppercase' }}>
-                            Статус: {columns.find(c => c.id === order.current_status)?.title}
-                          </div>
-                          {renderOrderCard(order, colNext, colNextLabel)}
-                        </div>
-                      );
-                    })}
+                  <div style={{ flex: 1, display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+                    {dayOrders.map(order => renderOrderCard(order, null, null, true))}
                     {dayOrders.length === 0 && (
-                      <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.75rem', padding: '1rem 0' }}>Свободно</div>
+                      <div style={{ display: 'flex', alignItems: 'center', color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>
+                        Перетащите заказы сюда...
+                      </div>
                     )}
                   </div>
                 </div>
