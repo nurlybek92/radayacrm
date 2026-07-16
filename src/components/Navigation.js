@@ -12,8 +12,7 @@ export default function Navigation({ session }) {
     if (confirm('Вы уверены, что хотите выйти?')) {
       const res = await fetch('/api/auth/logout', { method: 'POST' });
       if (res.ok) {
-        router.refresh();
-        router.push('/login');
+        window.location.href = '/login';
       }
     }
   };
