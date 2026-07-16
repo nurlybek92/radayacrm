@@ -3,8 +3,9 @@ import { redirect } from 'next/navigation';
 import db from '@/lib/db';
 import { DashboardCharts } from '@/components/DashboardCharts';
 import { TrendingUp, Package, Users, Activity, AlertTriangle } from 'lucide-react';
+import MonthFilter from '@/components/MonthFilter';
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }) {
   const session = await getSession();
   
   if (!session || (session.role !== 'director' && session.role !== 'accounting')) {
@@ -122,13 +123,49 @@ export default async function DashboardPage() {
     }
   });
 
-  const totalRevenue = monthlySales.reduce((acc, curr) => acc + curr.total, 0);
+  const currentMonthDate = new Date();
+  const defaultMonth = `${currentMonthDate.getFullYear()}-${String(currentMonthDate.getMonth() + 1).padStart(2, '0')}`;
+  // Await searchParams as per Next.js 15+ or standard practice, though Next.js <15 it's a prop
+  const sp = await searchParams;
+  const filterMonth = sp?.month || defaultMonth;
+
+  // Get distinct months for the dropdown
+  const distinctMonths = db.prepare(`
+    SELECT DISTINCT strftime('%Y-%m', order_date) as month
+    FROM orders
+    ORDER BY month DESC
+  `).all().map(r => r.month);
+  
+  if (!distinctMonths.includes(defaultMonth)) {
+    distinctMonths.unshift(defaultMonth);
+  }
+
+  // Calculate revenue and orders count for the selected month (or all time)
+  let totalRevenue = 0;
+  let totalOrdersCount = 0;
+  
+  if (filterMonth === 'all') {
+    const allQuery = db.prepare(`SELECT SUM(total_amount) as total_revenue, COUNT(id) as total_orders FROM orders`).get();
+    totalRevenue = allQuery.total_revenue || 0;
+    totalOrdersCount = allQuery.total_orders || 0;
+  } else {
+    const monthQuery = db.prepare(`
+      SELECT SUM(total_amount) as total_revenue, COUNT(id) as total_orders 
+      FROM orders 
+      WHERE strftime('%Y-%m', order_date) = ?
+    `).get(filterMonth);
+    totalRevenue = monthQuery.total_revenue || 0;
+    totalOrdersCount = monthQuery.total_orders || 0;
+  }
 
   return (
     <div className="container" style={{ padding: '2rem 1.5rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <h1 style={{ color: 'var(--primary)', fontSize: '2rem' }}>Дашборд Руководителя</h1>
-        <div className="badge badge-blue">Обновлено только что</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <MonthFilter currentMonth={filterMonth} distinctMonths={distinctMonths} />
+          <div className="badge badge-blue">Обновлено только что</div>
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -138,6 +175,7 @@ export default async function DashboardPage() {
             <div>
               <p className="form-label">Общая выручка</p>
               <h2 style={{ fontSize: '1.75rem', fontWeight: 700 }}>{totalRevenue.toLocaleString('ru-RU')} ₸</h2>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Количество заказов: {totalOrdersCount}</span>
             </div>
             <div style={{ padding: '0.5rem', background: 'var(--success-glow)', color: 'var(--success)', borderRadius: '0.5rem' }}>
               <TrendingUp className="w-6 h-6" />
