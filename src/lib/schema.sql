@@ -48,6 +48,7 @@ CREATE TABLE orders (
     order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
     total_amount REAL DEFAULT 0,
     is_fully_paid BOOLEAN DEFAULT 0,
+    planned_date DATETIME,
     FOREIGN KEY(client_id) REFERENCES clients(id),
     FOREIGN KEY(manager_id) REFERENCES users(id)
 );

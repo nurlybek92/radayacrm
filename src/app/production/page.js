@@ -12,7 +12,7 @@ export default async function ProductionPage() {
 
   // Fetch Orders for production (excluding fully shipped)
   const orders = db.prepare(`
-    SELECT o.id, c.name as client_name, o.order_date,
+    SELECT o.id, c.name as client_name, o.order_date, o.planned_date,
            p.name as product_name, p.type as product_type,
            i.quantity, i.total_weight,
            (SELECT status_code FROM order_status_history WHERE order_id = o.id ORDER BY changed_at DESC LIMIT 1) as current_status
