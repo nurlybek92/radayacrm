@@ -30,7 +30,7 @@ export function WarehouseClient({ materials, transactions, session }) {
     <div className="container" style={{ padding: '2rem 1.5rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <h1 style={{ color: 'var(--primary)', fontSize: '2rem' }}>Склад сырья</h1>
-        {session.role === 'director' && (
+        {(session.role === 'director' || session.role === 'production') && (
           <button className="btn btn-primary" onClick={() => setShowModal(true)}>
             <Plus className="w-4 h-4" /> Оприходовать сырье
           </button>
