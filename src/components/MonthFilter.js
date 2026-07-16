@@ -16,7 +16,7 @@ export default function MonthFilter({ currentMonth, distinctMonths }) {
 
   const formatMonth = (yyyy_mm) => {
     if (!yyyy_mm) return '';
-    const [year, month] = yyy_mm.split('-');
+    const [year, month] = yyyy_mm.split('-');
     const date = new Date(year, parseInt(month) - 1);
     return date.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
   };
