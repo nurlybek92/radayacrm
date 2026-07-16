@@ -11,7 +11,8 @@ import {
   Title,
   Tooltip,
   Legend,
-  ArcElement
+  ArcElement,
+  Filler
 } from 'chart.js';
 import { Line, Doughnut, Bar, Pie } from 'react-chartjs-2';
 
@@ -24,7 +25,8 @@ ChartJS.register(
   ArcElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
 
 export function DashboardCharts({ monthlySales, managerSales, productSales, topClients, orderStatuses }) {
