@@ -46,8 +46,8 @@ export default function KanbanBoard({ initialDeals, session, managers }) {
     const deal = deals.find(d => d.id === dealId);
     if (!deal || deal.status === targetStatus) return;
 
-    // Check authorization: manager can only update their own, director/accountant can update all
-    const isAuthorized = session.role === 'director' || session.role === 'accountant' || session.id === deal.manager_id;
+    // Check authorization: manager can only update their own, director/accounting can update all
+    const isAuthorized = session.role === 'director' || session.role === 'accounting' || session.id === deal.manager_id;
     if (!isAuthorized) {
       alert('У вас нет прав для изменения этой сделки');
       return;

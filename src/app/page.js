@@ -9,7 +9,7 @@ export default async function HomePage() {
   }
 
   const role = session.role;
-  if (role === "director" || role === "accountant") {
+  if (role === "director" || role === "accounting") {
     redirect("/dashboard");
   } else if (role === "production") {
     redirect("/production");

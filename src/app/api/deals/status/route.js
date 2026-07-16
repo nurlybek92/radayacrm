@@ -21,7 +21,7 @@ export async function POST(request) {
     }
 
     // Role verification for changing deal status
-    const isAuthorized = session.role === 'director' || session.role === 'accountant' || session.id === deal.manager_id;
+    const isAuthorized = session.role === 'director' || session.role === 'accounting' || session.id === deal.manager_id;
     if (!isAuthorized) {
       return NextResponse.json({ error: 'У вас нет прав на изменение этой сделки' }, { status: 403 });
     }

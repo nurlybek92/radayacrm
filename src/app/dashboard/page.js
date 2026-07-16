@@ -7,7 +7,7 @@ import { TrendingUp, Package, Users, Activity, AlertTriangle } from 'lucide-reac
 export default async function DashboardPage() {
   const session = await getSession();
   
-  if (!session || (session.role !== 'director' && session.role !== 'accountant')) {
+  if (!session || (session.role !== 'director' && session.role !== 'accounting')) {
     redirect('/');
   }
 
