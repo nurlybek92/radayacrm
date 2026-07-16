@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckCircle2, Factory, Package, Send, Calendar, LayoutGrid, GripVertical } from 'lucide-react';
+import { CheckCircle2, Factory, Package, Send, Calendar, LayoutGrid, GripVertical, Map } from 'lucide-react';
 
 export function ProductionClient({ orders, session }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [viewMode, setViewMode] = useState('kanban'); // 'kanban' | 'calendar'
+  const [viewMode, setViewMode] = useState('kanban'); // 'kanban' | 'calendar' | 'overview'
   const [localOrders, setLocalOrders] = useState(orders);
 
   const updateStatus = async (order_id, new_status) => {
@@ -52,6 +52,18 @@ export function ProductionClient({ orders, session }) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
     calendarDays.push(d);
+  }
+
+  // Overview month grid (35 days starting from Monday of current week)
+  const overviewDays = [];
+  const startDay = new Date(today);
+  const dayOfWeek = startDay.getDay() === 0 ? 6 : startDay.getDay() - 1; // 0 = Mon, 6 = Sun
+  startDay.setDate(startDay.getDate() - dayOfWeek); // Back to Monday
+
+  for (let i = 0; i < 35; i++) {
+    const d = new Date(startDay);
+    d.setDate(startDay.getDate() + i);
+    overviewDays.push(d);
   }
 
   // Format date to local YYYY-MM-DD to avoid UTC timezone jumps
@@ -163,6 +175,13 @@ export function ProductionClient({ orders, session }) {
         
         <div style={{ display: 'flex', gap: '0.5rem', background: '#F8F9FA', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}>
           <button 
+            className={`btn ${viewMode === 'overview' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ padding: '0.5rem 1rem' }}
+            onClick={() => setViewMode('overview')}
+          >
+            <Map className="w-4 h-4" /> Обзор
+          </button>
+          <button 
             className={`btn ${viewMode === 'kanban' ? 'btn-primary' : 'btn-secondary'}`}
             style={{ padding: '0.5rem 1rem' }}
             onClick={() => setViewMode('kanban')}
@@ -264,6 +283,72 @@ export function ProductionClient({ orders, session }) {
                         Перетащите заказы сюда...
                       </div>
                     )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: '1rem', background: '#FFF', padding: '1rem', borderRadius: '0.5rem', border: '1px solid var(--border-color)', overflowY: 'auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>Компактная сетка на месяц</h3>
+            <div style={{ display: 'flex', gap: '1rem', fontSize: '0.9rem' }}>
+              <div>Заказов в плане: <strong>{localOrders.filter(o => o.planned_date).length}</strong></div>
+              <div>Нераспределенных: <strong>{unscheduledOrders.length}</strong></div>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem', flex: 1 }}>
+            {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(day => (
+              <div key={day} style={{ textAlign: 'center', fontWeight: 'bold', padding: '0.5rem', color: 'var(--text-secondary)' }}>
+                {day}
+              </div>
+            ))}
+            
+            {overviewDays.map((date, idx) => {
+              const dayOrders = getOrdersForDate(date);
+              const isToday = date.toDateString() === today.toDateString();
+              const isCurrentMonth = date.getMonth() === today.getMonth();
+              
+              return (
+                <div 
+                  key={date.toISOString()}
+                  style={{ 
+                    border: isToday ? '2px solid var(--primary)' : '1px solid var(--border-color)',
+                    background: isToday ? 'var(--primary-glow)' : (isCurrentMonth ? '#FFF' : '#f9f9f9'),
+                    borderRadius: '0.5rem',
+                    padding: '0.5rem',
+                    minHeight: '100px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    opacity: isCurrentMonth ? 1 : 0.6
+                  }}
+                >
+                  <div style={{ textAlign: 'right', fontSize: '0.8rem', fontWeight: 700, color: isToday ? 'var(--primary)' : 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                    {date.getDate()} {date.toLocaleDateString('ru-RU', { month: 'short' })}
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', overflowY: 'auto', flex: 1 }}>
+                    {dayOrders.map(order => (
+                      <div 
+                        key={order.id} 
+                        style={{ 
+                          background: 'var(--bg-secondary)', 
+                          padding: '0.25rem 0.5rem', 
+                          borderRadius: '4px', 
+                          fontSize: '0.7rem',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          borderLeft: '2px solid var(--primary)',
+                          cursor: 'pointer'
+                        }}
+                        title={`Заказ #${order.id}\nКлиент: ${order.client_name}\nПродукт: ${order.product_name}\nКол-во: ${order.quantity}`}
+                      >
+                        {order.client_name}
+                      </div>
+                    ))}
                   </div>
                 </div>
               );
