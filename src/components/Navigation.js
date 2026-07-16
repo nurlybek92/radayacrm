@@ -18,7 +18,7 @@ export default function Navigation({ session }) {
   };
 
   const isDirector = session.role === 'director';
-  const isSales = session.role === 'sales' || session.role === 'director';
+  const isSales = session.role === 'sales' || session.role === 'director' || session.role === 'accounting';
   const isProduction = session.role === 'production' || session.role === 'director';
 
   return (
@@ -82,7 +82,8 @@ export default function Navigation({ session }) {
             fontWeight: 600
           }}>
             {session.role === 'director' ? 'Директор' : 
-             session.role === 'production' ? 'Производство' : 'Продажи'}
+             session.role === 'production' ? 'Производство' : 
+             session.role === 'accounting' ? 'Бухгалтер' : 'Продажи'}
           </span>
           <button onClick={handleLogout} className="logout-btn" title="Выйти">
             <LogOut className="w-4 h-4" />

@@ -6,13 +6,13 @@ import { SalesClient } from './SalesClient';
 export default async function SalesPage() {
   const session = await getSession();
   
-  if (!session || (session.role !== 'director' && session.role !== 'sales')) {
+  if (!session || (session.role !== 'director' && session.role !== 'sales' && session.role !== 'accounting')) {
     redirect('/');
   }
 
   // Fetch Clients
   let clients;
-  if (session.role === 'director') {
+  if (session.role === 'director' || session.role === 'accounting') {
     clients = db.prepare('SELECT id, name FROM clients ORDER BY name').all();
   } else {
     clients = db.prepare('SELECT id, name FROM clients WHERE assigned_manager_id = ? ORDER BY name').all(session.id);
@@ -33,7 +33,7 @@ export default async function SalesPage() {
   `;
 
   let orders;
-  if (session.role === 'director') {
+  if (session.role === 'director' || session.role === 'accounting') {
     orders = db.prepare(ordersQuery + ' ORDER BY o.order_date DESC').all();
   } else {
     orders = db.prepare(ordersQuery + ' WHERE o.manager_id = ? ORDER BY o.order_date DESC').all(session.id);

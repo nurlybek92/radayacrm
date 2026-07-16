@@ -94,7 +94,7 @@ export function SalesClient({ orders, clients, products, session }) {
     <div className="container" style={{ padding: '2rem 1.5rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <h1 style={{ color: 'var(--primary)', fontSize: '2rem' }}>Модуль Продаж</h1>
-        {session.role !== 'production' && (
+        {(session.role === 'sales' || session.role === 'director') && (
           <button className="btn btn-primary" onClick={() => setShowOrderModal(true)}>
             <Plus className="w-4 h-4" /> Новый Заказ
           </button>

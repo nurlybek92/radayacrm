@@ -15,7 +15,7 @@ db.exec(schema);
 console.log('Seeding data...');
 
 // 1. Roles & Users
-db.prepare("INSERT INTO roles (id, name, description) VALUES (1, 'director', 'Директор (Admin)'), (2, 'sales', 'Менеджер продаж'), (3, 'production', 'Начальник производства')").run();
+db.prepare("INSERT INTO roles (id, name, description) VALUES (1, 'director', 'Директор (Admin)'), (2, 'sales', 'Менеджер продаж'), (3, 'production', 'Начальник производства'), (4, 'accounting', 'Бухгалтер')").run();
 
 const salt = bcrypt.genSaltSync(10);
 const password_hash = bcrypt.hashSync('123456', salt);
@@ -26,6 +26,7 @@ insertUser.run(1, 'Евгений Гальченко (Директор)', 'direc
 insertUser.run(2, 'Менеджер Один', 'manager1', password_hash);
 insertUser.run(2, 'Менеджер Два', 'manager2', password_hash);
 insertUser.run(3, 'Начальник Производства', 'prod', password_hash);
+insertUser.run(4, 'Главный Бухгалтер', 'acc', password_hash);
 
 // 2. Clients
 const insertClient = db.prepare("INSERT INTO clients (name, contact_info, assigned_manager_id) VALUES (?, ?, ?)");
