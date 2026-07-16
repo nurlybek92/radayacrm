@@ -1,6 +1,7 @@
 import "./globals.css";
 import { getSession } from "@/lib/auth";
 import Navigation from "@/components/Navigation";
+import Footer from "@/components/Footer";
 
 export const metadata = {
   title: "miniCRM - Система Управления",
@@ -17,6 +18,7 @@ export default async function RootLayout({ children }) {
         <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           {children}
         </main>
+        <Footer />
       </body>
     </html>
   );
